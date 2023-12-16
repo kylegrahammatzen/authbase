@@ -34,6 +34,6 @@ export const userVerifications = pgTable("user_verifications", {
   user_id: bigint("user_id", { mode: "bigint" })
     .primaryKey()
     .references(() => users.user_id),
-  verification_code: smallint("verification_code"),
+  verification_code: integer("verification_code"),
   expires_at: timestamp("expires_at").notNull(),
 });

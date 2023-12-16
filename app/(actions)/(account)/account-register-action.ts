@@ -69,7 +69,7 @@ export const registerAccount = async (
     }
 
     const userId = await generateSnowflakeId();
-    const code = Math.floor(10000 + Math.random() * (32767 - 10000 + 1));
+    const code = Math.floor(10000 + Math.random() * 90000);
 
     const accountTransaction = db.transaction(async (tx) => {
       await db.insert(users).values({
