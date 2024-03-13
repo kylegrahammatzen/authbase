@@ -29,24 +29,24 @@ export default function LoginForm() {
   }
 
   return (
-    <form className="space-y-4 md:space-y-4" onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="space-y-4">
       <input
         type="email"
         name="email"
         placeholder="Email"
-        className="block p-3 border border-gray-300 rounded-md"
+        className="block p-2 border border-gray-300 rounded-md"
         required
       />
       <input
         type="password"
         name="password"
         placeholder="Password"
-        className="block p-3 border border-gray-300 rounded-md"
+        className="block p-2 border border-gray-300 rounded-md"
         required
       />
       <button
         type="submit"
-        className="block p-3 text-white bg-blue-500 rounded-md"
+        className="block p-2 text-white bg-blue-500 rounded-md"
       >
         Login
       </button>

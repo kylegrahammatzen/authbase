@@ -15,7 +15,10 @@ export async function LogoutLink() {
 
   return (
     <form onSubmit={onSubmit}>
-      <button type="submit" className="text-blue-500">
+      <button
+        type="submit"
+        className="block p-2 w-24 text-white bg-red-500 rounded-md"
+      >
         Sign out
       </button>
     </form>
