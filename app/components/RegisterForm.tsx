@@ -22,10 +22,6 @@ export default function RegisterForm() {
     }
 
     toast.success(formResponse.message);
-
-    // Wait 2 seconds
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
     router.push(LOGIN_CALLBACK_URL);
   }
 
