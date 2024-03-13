@@ -6,6 +6,8 @@ export const LOGOUT_CALLBACK_URL = "/sign-in";
 
 // Configuration for Authbase
 const authbase = initAuthbase({
+  // Add publicRoutes as needed
+  // publicRoutes: ["/sign-in", "/sign-up"],
   privateRoutes: ["/protected"],
 });
 
