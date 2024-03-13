@@ -15,7 +15,9 @@ export async function LogoutLink() {
 
   return (
     <form onSubmit={onSubmit}>
-      <button type="submit">Sign out</button>
+      <button type="submit" className="text-blue-500">
+        Sign out
+      </button>
     </form>
   );
 }
