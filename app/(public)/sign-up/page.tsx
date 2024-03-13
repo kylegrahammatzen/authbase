@@ -5,7 +5,10 @@ export default function page() {
   return (
     <>
       <RegisterForm />
-      <Link href="/sign-in" className="text-red-500">
+      <Link
+        href="/sign-in"
+        className="block p-2 w-[75px] text-white bg-red-500 rounded-md"
+      >
         Sign in
       </Link>
     </>
