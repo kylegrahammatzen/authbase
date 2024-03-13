@@ -42,8 +42,6 @@ export async function getSession(accountId: string) {
     };
   }
 
-  console.log("Creating session for account", userResponse[0].id);
-
   // Generate a new session
   const sessionId = uuidv4();
   const accessToken = await generateToken();
@@ -52,8 +50,8 @@ export async function getSession(accountId: string) {
   const createdAt = new Date();
   const accessTokenExpiresAt = new Date(createdAt);
 
-  // Add 1 minute to the access token expiration
-  accessTokenExpiresAt.setMinutes(accessTokenExpiresAt.getMinutes() + 1);
+  // Add 15 minutes to the access token expiration
+  accessTokenExpiresAt.setMinutes(accessTokenExpiresAt.getMinutes() + 15);
 
   const expiresAt = new Date(createdAt);
   expiresAt.setDate(expiresAt.getDate() + 7);
