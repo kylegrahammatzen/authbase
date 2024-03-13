@@ -4,8 +4,7 @@ import { LogoutLink } from "@/app/components/LogoutLink";
 export default async function ProtectedPage() {
   const account = await getAccount();
 
-  console.log("Account:");
-  console.log(account);
+  console.log("Account", account);
 
   return (
     <>
