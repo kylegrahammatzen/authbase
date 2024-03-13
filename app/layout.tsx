@@ -11,8 +11,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Toaster position="bottom-right" richColors />
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Toaster position="bottom-right" richColors />
+        {children}
+      </body>
     </html>
   );
 }
