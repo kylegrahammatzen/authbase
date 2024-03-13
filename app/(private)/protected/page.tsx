@@ -9,6 +9,9 @@ export default async function ProtectedPage() {
   return (
     <>
       <div>Protected Page</div>
+      <div>
+        <pre>{JSON.stringify(account, null, 2)}</pre>
+      </div>
       <LogoutLink />
     </>
   );
