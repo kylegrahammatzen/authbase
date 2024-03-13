@@ -57,6 +57,7 @@ export async function loginAccount(formData: FormData) {
       };
     }
 
+    // Create a session for the account
     const sessionResponse = await getSession(accountResponse[0].id);
 
     if (sessionResponse.status == "error") {
@@ -155,10 +156,23 @@ export async function createAccount(formData: FormData) {
       });
     });
 
-    if (accountTransaction == undefined) {
+    try {
+      await accountTransaction;
+    } catch (error) {
       return {
         status: "error",
         message: "Unable to store account information. Please try again later.",
+      };
+    }
+
+    // Create a session for the account
+    const sessionResponse = await getSession(accountId);
+
+    if (sessionResponse.status == "error") {
+      return {
+        status: "error",
+        message:
+          "Created account but unable to create session. Please try again later.",
       };
     }
 
