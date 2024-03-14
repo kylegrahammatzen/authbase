@@ -1,5 +1,5 @@
 import { getAccount } from "@/app/actions/auth/auth";
-import { LogoutLink } from "@/app/components/LogoutLink";
+import { LogoutLink } from "@/app/components/auth/LogoutLink";
 
 export default async function ProtectedPage() {
   const account = await getAccount();

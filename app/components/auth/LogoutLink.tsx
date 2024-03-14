@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent } from "react";
-import { logoutAccount } from "../actions/auth/auth";
+import { logoutAccount } from "../../actions/auth/auth";
 import { toast } from "sonner";
 
 export async function LogoutLink() {
