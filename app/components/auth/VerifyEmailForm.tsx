@@ -61,31 +61,6 @@ export default function VerifyEmailForm(props: VerifyEmailFormProps) {
     }));
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const pastedData = e.clipboardData.getData("text");
-    const digits = pastedData.split("").filter((char) => /^\d$/.test(char));
-    const expectedLength = Object.keys(codeState).length;
-
-    if (digits.length !== expectedLength) return;
-
-    const newCodeState = digits.reduce(
-      (state, digit, index) => ({
-        ...state,
-        [`code${index + 1}`]: digit,
-      }),
-      {
-        ...Array(expectedLength)
-          .fill(0)
-          .reduce(
-            (acc, _, index) => ({ ...acc, [`code${index + 1}`]: "" }),
-            {}
-          ),
-      }
-    );
-
-    setCodeState(newCodeState);
-  };
-
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -134,7 +109,6 @@ export default function VerifyEmailForm(props: VerifyEmailFormProps) {
               placeholder="0"
               value={codeState[`code${i + 1}` as keyof AccountEmailCode]}
               onChange={(e) => handleChange(e, i + 1)}
-              onPaste={handlePaste}
               onKeyUp={inputFocus}
               disabled={isLoading}
             />
