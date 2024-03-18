@@ -6,10 +6,11 @@ import {
   Preview,
   Text,
   Link,
+  Button,
 } from "@react-email/components";
+
 interface ResetPasswordTemplateProps {
   resetLink: string;
-  secretCode: string;
 }
 
 const styles = {
@@ -29,22 +30,13 @@ const styles = {
   textHeader: {
     fontWeight: "bold",
   },
-  linkStyle: {
-    color: "#2563EB",
-    textDecoration: "underline",
-  },
-  codeContainer: {
-    color: "#000000",
-    outline: "none",
-    width: "36px",
-    height: "36px",
-    borderRadius: "8px",
-    border: "1px solid #D1D5DB",
-    fontSize: "18px",
-    fontWeight: "bold",
-    margin: "0 4px",
-    textAlign: "center" as const,
-    lineHeight: "36px",
+  buttonStyle: {
+    display: "block",
+    padding: "8px",
+    color: "#ffffff",
+    backgroundColor: "#3B82F6",
+    borderRadius: "0.375rem",
+    textDecoration: "none",
   },
   logo: {
     width: 45,
@@ -52,14 +44,6 @@ const styles = {
     margin: "0 auto",
   },
 };
-
-type CodeContainerProps = {
-  char: string;
-};
-
-const CodeContainer = ({ char }: CodeContainerProps) => (
-  <div style={styles.codeContainer}>{char}</div>
-);
 
 export default function ResetPasswordTemplate(
   props: ResetPasswordTemplateProps
@@ -78,23 +62,20 @@ export default function ResetPasswordTemplate(
             Password Reset Request
           </Text>
           <Text style={styles.text}>
-            You're receiving this email because we received a password reset
-            request for your account. You can either enter the code provided
-            below at our reset page or click the link to reset your password.
+            Someone recently requested a password change for your ExampleDomain
+            account. If this was you, you can set a new password here:
           </Text>
-          <div style={{ display: "flex" }}>
-            {props.secretCode.split("").map((char, i) => (
-              <CodeContainer key={i} char={char} />
-            ))}
-          </div>
+          <Button
+            href={
+              "http://localhost:3000/update-password?token=" + props.resetLink
+            }
+            style={styles.buttonStyle}
+          >
+            Reset password
+          </Button>
           <Text style={styles.text}>
-            <Link href={props.resetLink} style={styles.linkStyle}>
-              Reset Password
-            </Link>
-          </Text>
-          <Text style={styles.text}>
-            If you did not request a password reset, no further action is
-            required.
+            If you don't want to change your password or didn't request this,
+            just ignore and delete this message.
           </Text>
           <Text style={styles.text}>
             Sincerely,
