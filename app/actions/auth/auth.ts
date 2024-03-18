@@ -16,6 +16,9 @@ import { cookies } from "next/headers";
 import { signToken, verifyToken } from "@/lib/auth/utils/jwt";
 import { redirect } from "next/navigation";
 import { LOGIN_CALLBACK_URL } from "@/middleware";
+import { Resend } from "resend";
+import ResetPasswordTemplate from "@/emails/ResetPasswordTemplate";
+import VerifyTemplate from "@/emails/VerifyTemplate";
 
 export type AccountState = {
   accountId: string;
@@ -29,6 +32,8 @@ export type AccountEmailCode = {
   code4: string;
   code5: string;
 };
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function loginAccount(formData: FormData) {
   const email = formData.get("email") as string;
@@ -211,6 +216,23 @@ export async function createAccount(formData: FormData) {
       return {
         status: "error",
         message: "Unable to store account information. Please try again later.",
+      };
+    }
+
+    // Send the email verification
+    const emailResponse = await resend.emails.send({
+      from: "ExampleDomain <no-reply@exampledomain.com>",
+      to: email,
+      subject: "[ExampleDomain] Verify your account",
+      html: "",
+      react: VerifyTemplate({ secretCode: String(code) }),
+    });
+
+    if (emailResponse.error !== null) {
+      console.error(emailResponse.error);
+      return {
+        status: "error",
+        message: "Unable to send email verification. Please try again later.",
       };
     }
 
@@ -464,6 +486,23 @@ export async function resendAccountEmailVerification(
     };
   }
 
+  // Resend the email verification
+  const emailResponse = await resend.emails.send({
+    from: "ExampleDomain <no-reply@exampledomain.com>",
+    to: accountState.email,
+    subject: "[ExampleDomain] Verify your account",
+    html: "",
+    react: VerifyTemplate({ secretCode: String(code) }),
+  });
+
+  if (emailResponse.error !== null) {
+    console.error(emailResponse.error);
+    return {
+      status: "error",
+      message: "Unable to resend email verification",
+    };
+  }
+
   return {
     status: "success",
     message: "Verification code sent",
@@ -520,20 +559,11 @@ export async function resetAccountPassword(formData: FormData) {
     );
 
     // // Check if the last password reset was requested less than 1 hour ago
-    // if (difference < 3600) {
-    //   return {
-    //     status: "error",
-    //     message:
-    //       "Please wait a bit longer! You've already requested a password reset less than 1 hour ago.",
-    //   };
-    // }
-
-    // Check if the last password reset was requested less than 1 second ago
-    if (difference < 10) {
+    if (difference < 3600) {
       return {
         status: "error",
         message:
-          "Please wait a bit longer! You've already requested a password reset less than 10 seconds ago.",
+          "Please wait a bit longer! You've already requested a password reset less than 1 hour ago.",
       };
     }
   }
@@ -588,7 +618,22 @@ export async function resetAccountPassword(formData: FormData) {
       };
     }
 
-    console.log("Token: " + jwt);
+    // Send the password reset email
+    const emailResponse = await resend.emails.send({
+      from: "ExampleDomain <no-reply@exampledomain.com>",
+      to: email,
+      subject: "[ExampleDomain] Password Reset",
+      html: "",
+      react: ResetPasswordTemplate({ resetLink: jwt }),
+    });
+
+    if (emailResponse.error !== null) {
+      console.error(emailResponse.error);
+      return {
+        status: "error",
+        message: "Unable to send password reset email. Please try again later.",
+      };
+    }
 
     return {
       status: "success",
