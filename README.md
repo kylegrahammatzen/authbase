@@ -34,7 +34,9 @@ Before running the application, you'll need to set up your environment variables
 
 1. Rename `.env.local.example` to `.env.local`.
 2. Fill in the `DATABASE_URL` with your PostgreSQL database URL.
-3. Generate two authentication keys (for `APP_KEY` and `AUTH_KEY`) using https://generate-secret.vercel.app/32.
+3. Generate two authentication keys (for `APP_KEY` and `AUTH_KEY`) using https://generate-secret.vercel.app/
+4. Create an account on https://resend.com/overview, obtain an API Key, and enter the key into `RESEND_API_KEY`
+5. Set up the `emails/` folder with your icons and URLs as required.
 
 ## Database Schema
 
