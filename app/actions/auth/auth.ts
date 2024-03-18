@@ -4,6 +4,7 @@ import { comparePassword, hashPassword } from "@/lib/auth/utils/hasher";
 import { db } from "@/lib/db";
 import {
   account_emails,
+  account_password_resets,
   account_verifications,
   accounts,
   sessions,
@@ -12,7 +13,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { getSession } from "./session";
 import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/utils/jwt";
+import { signToken, verifyToken } from "@/lib/auth/utils/jwt";
 import { redirect } from "next/navigation";
 import { LOGIN_CALLBACK_URL } from "@/middleware";
 
@@ -287,7 +288,7 @@ export async function getAccount() {
 }
 
 export async function verifyAccountEmail(
-  codeArray: number[],
+  code: string,
   accountState: AccountState
 ) {
   // Check if the user exists
@@ -331,7 +332,7 @@ export async function verifyAccountEmail(
   }
 
   // Check if the verification code matches
-  const code = parseInt(codeArray.join(""));
+  const codeNumber = parseInt(code);
 
   const verificationResponse = await db
     .select()
@@ -340,7 +341,7 @@ export async function verifyAccountEmail(
       and(
         eq(account_verifications.accountId, accountState.accountId),
         eq(account_verifications.accountEmailId, accountEmailResponse[0].id),
-        eq(account_verifications.code, code)
+        eq(account_verifications.code, codeNumber)
       )
     )
     .limit(1);
@@ -503,23 +504,274 @@ export async function resetAccountPassword(formData: FormData) {
     };
   }
 
-  // Retrieve the account
-  const accountResponse = await db
+  // Check the last time a password reset was requested
+  const accountPasswordResetResponse = await db
     .select()
-    .from(accounts)
-    .where(eq(accounts.id, accountEmailResponse[0].accountId))
+    .from(account_password_resets)
+    .where(
+      eq(account_password_resets.accountId, accountEmailResponse[0].accountId)
+    )
+    .orderBy(desc(account_password_resets.createdAt))
     .limit(1);
 
-  if (accountResponse.length == 0) {
+  if (accountPasswordResetResponse.length > 0) {
+    const difference = Math.floor(
+      (Date.now() - accountPasswordResetResponse[0].createdAt.getTime()) / 1000
+    );
+
+    // // Check if the last password reset was requested less than 1 hour ago
+    // if (difference < 3600) {
+    //   return {
+    //     status: "error",
+    //     message:
+    //       "Please wait a bit longer! You've already requested a password reset less than 1 hour ago.",
+    //   };
+    // }
+
+    // Check if the last password reset was requested less than 1 second ago
+    if (difference < 10) {
+      return {
+        status: "error",
+        message:
+          "Please wait a bit longer! You've already requested a password reset less than 10 seconds ago.",
+      };
+    }
+  }
+
+  // Create a password reset token
+  const id = String(uuidv4());
+  const token = String(uuidv4());
+
+  const jwt = await signToken({
+    id: id,
+    accountId: accountEmailResponse[0].accountId,
+    token: token,
+  });
+
+  const createdAt = new Date();
+  const expiresAt = new Date();
+
+  // Password reset token expires at date + 1 hour
+  expiresAt.setHours(expiresAt.getHours() + 1);
+
+  try {
+    const accountTransaction = db.transaction(async (tx) => {
+      await tx
+        .update(account_password_resets)
+        .set({
+          used: true,
+        })
+        .where(
+          eq(
+            account_password_resets.accountId,
+            accountEmailResponse[0].accountId
+          )
+        );
+
+      // Create the password reset
+      await tx.insert(account_password_resets).values({
+        id: id,
+        accountId: accountEmailResponse[0].accountId,
+        token: token,
+        createdAt: createdAt,
+        expiresAt: expiresAt,
+      });
+    });
+
+    try {
+      await accountTransaction;
+    } catch (error) {
+      return {
+        status: "error",
+        message:
+          "Unable to store password reset information. Please try again later.",
+      };
+    }
+
+    console.log("Token: " + jwt);
+
+    return {
+      status: "success",
+      message: "Check your inbox to reset your password",
+    };
+  } catch (error) {
+    console.error(error);
     return {
       status: "error",
-      message: "Account could not be retrieved",
+      message: "Unable to create password reset token. Please try again later.",
+    };
+  }
+}
+
+export async function checkAuthToken(token: string) {
+  // Verify the token
+  let decryptedToken;
+  try {
+    decryptedToken = await verifyToken(token);
+  } catch (error) {
+    return {
+      status: "error",
+      message: "Token is invalid",
+    };
+  }
+
+  // Check if the token is used/expired
+  const accountPasswordResetResponse = await db
+    .select()
+    .from(account_password_resets)
+    .where(
+      and(
+        eq(account_password_resets.accountId, decryptedToken.accountId),
+        eq(account_password_resets.token, decryptedToken.token),
+        eq(account_password_resets.used, false)
+      )
+    )
+    .limit(1);
+
+  if (accountPasswordResetResponse.length == 0) {
+    return {
+      status: "error",
+      message: "Token is invalid",
     };
   }
 
   return {
-    status: "error",
-    message: "Not implemented",
+    status: "success",
+    message: "Token is valid",
+    account: {
+      id: decryptedToken.accountId,
+    },
+  };
+}
+
+export async function updatePassword(
+  formData: FormData,
+  accountId: string,
+  token: string
+) {
+  // Check if the password has at least 8 characters
+  const password = formData.get("password") as string;
+
+  if (password.length < 8) {
+    return {
+      status: "error",
+      message: "Password must be at least 8 characters long",
+    };
+  }
+
+  // Check if the password has at least one uppercase character
+  if (!/[A-Z]/.test(password)) {
+    return {
+      status: "error",
+      message: "Password must have at least one uppercase character",
+    };
+  }
+
+  // Check if the password has at least one number
+  if (!/[0-9]/.test(password)) {
+    return {
+      status: "error",
+      message: "Password must have at least one number",
+    };
+  }
+
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  // Check if the passwords match
+  if (password !== confirmPassword) {
+    return {
+      status: "error",
+      message: "Passwords do not match",
+    };
+  }
+
+  // Verify the token
+  let decryptedToken;
+  try {
+    decryptedToken = await verifyToken(token);
+  } catch (error) {
+    return {
+      status: "error",
+      message: "Token is invalid",
+    };
+  }
+
+  // Check if the token is used/expired
+  const accountPasswordResetResponse = await db
+    .select()
+    .from(account_password_resets)
+    .where(
+      and(
+        eq(account_password_resets.accountId, accountId),
+        eq(account_password_resets.token, decryptedToken.token),
+        eq(account_password_resets.used, false)
+      )
+    )
+    .limit(1);
+
+  if (accountPasswordResetResponse.length == 0) {
+    return {
+      status: "invalid",
+      message: "Token is invalid",
+    };
+  }
+
+  // Update the password
+  const passwordResponse = await hashPassword(password);
+
+  const accountTransaction = db.transaction(async (tx) => {
+    // Set the password reset token to used
+    await tx
+      .update(account_password_resets)
+      .set({
+        used: true,
+      })
+      .where(
+        and(
+          eq(account_password_resets.accountId, accountId),
+          eq(account_password_resets.token, token)
+        )
+      );
+
+    // Update the account's password
+    await tx
+      .update(accounts)
+      .set({
+        password: passwordResponse,
+      })
+      .where(eq(accounts.id, accountId));
+
+    // Set all sessions to expired
+    await tx
+      .update(sessions)
+      .set({
+        expiresAt: new Date(),
+      })
+      .where(eq(sessions.accountId, accountId));
+  });
+
+  try {
+    await accountTransaction;
+  } catch (error) {
+    return {
+      status: "error",
+      message: "Unable to update password. Please try again later.",
+    };
+  }
+
+  // Create a session for the account
+  const sessionResponse = await getSession(accountId);
+
+  if (sessionResponse.status == "error") {
+    return {
+      status: "error",
+      message: "Unable to create account session. Please try again later.",
+    };
+  }
+
+  return {
+    status: "success",
+    message: "Password updated",
   };
 }
 

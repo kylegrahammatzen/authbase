@@ -1,38 +1,37 @@
-"use client";
-
-import {
-  AccountEmailCode,
-  AccountState,
-  verifyAccountEmail,
-} from "@/app/actions/auth/auth";
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { toast } from "sonner";
-import Spinner from "../Spinner";
+import { AccountEmailCode, AccountState } from "@/app/actions/auth/auth";
+import { FormEvent, useRef, useState } from "react";
 import ResendCooldown from "../ResendCooldown";
+import Spinner from "../Spinner";
+import { toast } from "sonner";
 
-type VerifyEmailFormProps = {
+type VerifyFormProps = {
+  buttonText: string;
   accountState: AccountState;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onSubmit: (
+    code: string,
+    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
+  ) => Promise<void>;
+  children?: React.ReactNode;
 };
 
-export default function VerifyEmailForm(props: VerifyEmailFormProps) {
-  const [codeState, setCodeState] = useState<AccountEmailCode>({
+export default function VerifyForm(props: VerifyFormProps) {
+  const [codeState, setCodeState] = useState({
     code1: "",
     code2: "",
     code3: "",
     code4: "",
     code5: "",
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fieldsRef = useRef<HTMLDivElement>(null);
 
-  const inputFocus: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
-    const currentIndex = Number(e.currentTarget.dataset.index);
-    const isDigit = e.key.match(/^\d$/);
+  const inputFocus: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    const currentIndex = Number(event.currentTarget.dataset.index);
+    const isDigit = event.key.match(/^\d$/);
 
     let nextIndex =
       currentIndex +
-      (isDigit ? 1 : e.key === "Backspace" || e.key === "Delete" ? -1 : 0);
+      (isDigit ? 1 : event.key === "Backspace" || e.key === "Delete" ? -1 : 0);
 
     // Check if fieldsRef.current is not null before accessing children
     if (fieldsRef.current) {
@@ -44,25 +43,23 @@ export default function VerifyEmailForm(props: VerifyEmailFormProps) {
     }
   };
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement>,
+  async function onChange(
+    event: React.ChangeEvent<HTMLInputElement>,
     codeNumber: number
-  ) => {
-    let newValue = e.target.value.slice(-1);
-    const key = `code${codeNumber}` as keyof AccountEmailCode;
-
-    if (!/^\d$/.test(newValue)) {
-      newValue = "";
+  ) {
+    const newValue = event.target.value.slice(-1);
+    if (/^\d$/.test(newValue)) {
+      setCodeState((prev) => ({ ...prev, [`code${codeNumber}`]: newValue }));
+      // Automatically move focus to next input if applicable
+      const nextSibling = event.target.nextElementSibling as HTMLInputElement;
+      if (nextSibling) nextSibling.focus();
     }
-
-    setCodeState((prevState) => ({
-      ...prevState,
-      [key]: newValue,
-    }));
-  };
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    setIsLoading(true);
 
     // Check if all fields are filled
     const isAllFieldsFilled = Object.values(codeState).every(
@@ -70,27 +67,15 @@ export default function VerifyEmailForm(props: VerifyEmailFormProps) {
     );
 
     if (!isAllFieldsFilled) {
-      return toast.error("Please fill all fields");
-    }
-
-    setIsLoading(true);
-
-    const numbersArray = Object.values(codeState).map((key) =>
-      parseInt(key.replace("code", ""))
-    );
-
-    const formResponse = await verifyAccountEmail(
-      numbersArray,
-      props.accountState
-    );
-
-    if (formResponse.status == "error") {
-      toast.error(formResponse.message);
       setIsLoading(false);
+      toast.error("Please fill all fields");
       return;
     }
 
-    props.onSubmit(event);
+    const code = Object.values(codeState)
+      .map((key) => key)
+      .join("");
+    await props.onSubmit(code, setIsLoading);
   }
 
   return (
@@ -108,18 +93,18 @@ export default function VerifyEmailForm(props: VerifyEmailFormProps) {
               className="block w-14 h-14 rounded-md border-0 text-center text-lg font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 focus:outline-none"
               placeholder="0"
               value={codeState[`code${i + 1}` as keyof AccountEmailCode]}
-              onChange={(e) => handleChange(e, i + 1)}
+              onChange={(e) => onChange(e, i + 1)}
               onKeyUp={inputFocus}
               disabled={isLoading}
             />
           ))}
         </div>
-        <ResendCooldown accountState={props.accountState} />
+        {props.children}
         <button
           type="submit"
           className="flex justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
         >
-          {!isLoading ? "Verify account" : <Spinner />}
+          {!isLoading ? `${props.buttonText}` : <Spinner />}
         </button>
       </div>
     </form>

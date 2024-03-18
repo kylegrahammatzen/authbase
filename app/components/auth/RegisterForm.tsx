@@ -6,13 +6,15 @@ import {
   AccountState,
   createAccount,
   getAccountSession,
+  verifyAccountEmail,
 } from "../../actions/auth/auth";
 import { useRouter } from "next/navigation";
 
-import VerifyEmailForm from "./VerifyEmailForm";
 import Link from "next/link";
 import { LOGIN_CALLBACK_URL } from "@/middleware";
 import Spinner from "../Spinner";
+import ResendCooldown from "../ResendCooldown";
+import VerifyForm from "./VerifyForm";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -55,13 +57,23 @@ export default function RegisterForm() {
     }
   }
 
-  async function onSubmitVerification(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onSubmitVerification(
+    code: string,
+    setIsLoading: (isLoading: boolean) => void
+  ) {
+    const formResponse = await verifyAccountEmail(code, accountState);
+
+    if (formResponse.status == "error") {
+      toast.error(formResponse.message);
+      setIsLoading(false);
+      return;
+    }
 
     const serverResponse = await getAccountSession(accountState);
 
     if (serverResponse.status === "error") {
       toast.error(serverResponse.message);
+      setIsLoading(false);
       return;
     }
 
@@ -117,9 +129,11 @@ export default function RegisterForm() {
           </Link>
         </>
       )) || (
-        <VerifyEmailForm
+        <VerifyForm
+          buttonText={"Verify account"}
           accountState={accountState}
           onSubmit={onSubmitVerification}
+          children={<ResendCooldown accountState={accountState} />}
         />
       )}
     </>

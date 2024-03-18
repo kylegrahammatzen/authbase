@@ -8,9 +8,11 @@ import {
   AccountState,
   getAccountSession,
   loginAccount,
+  verifyAccountEmail,
 } from "../../actions/auth/auth";
 import Link from "next/link";
-import VerifyEmailForm from "./VerifyEmailForm";
+import VerifyForm from "./VerifyForm";
+import Spinner from "../Spinner";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -35,7 +37,7 @@ export default function LoginForm() {
     const formResponse = await loginAccount(formData);
 
     if (formResponse.status == "error") {
-      toast.error(formResponse.message);
+      toast.error(formResponse.message ?? "An unexpected error occurred.");
       setIsLoading(false);
       return;
     }
@@ -51,20 +53,28 @@ export default function LoginForm() {
       return;
     }
 
-    if (formResponse.status == "success") {
-      toast.success(formResponse.message);
+    toast.success(formResponse.message);
 
-      router.push(callbackUrl);
-    }
+    router.push(callbackUrl);
   }
 
-  async function onSubmitVerification(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onSubmitVerification(
+    code: string,
+    setIsLoading: (isLoading: boolean) => void
+  ) {
+    const formResponse = await verifyAccountEmail(code, accountState);
+
+    if (formResponse.status == "error") {
+      toast.error(formResponse.message);
+      setIsLoading(false);
+      return;
+    }
 
     const serverResponse = await getAccountSession(accountState);
 
     if (serverResponse.status === "error") {
       toast.error(serverResponse.message);
+      setIsLoading(false);
       return;
     }
 
@@ -95,7 +105,7 @@ export default function LoginForm() {
               type="submit"
               className="block p-2 text-white bg-blue-500 rounded-md"
             >
-              Login
+              {isLoading ? <Spinner /> : "Sign in"}
             </button>
           </form>
           <Link
@@ -112,7 +122,8 @@ export default function LoginForm() {
           </Link>
         </>
       )) || (
-        <VerifyEmailForm
+        <VerifyForm
+          buttonText={"Verify account"}
           accountState={accountState}
           onSubmit={onSubmitVerification}
         />

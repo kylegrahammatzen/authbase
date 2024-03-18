@@ -1,15 +1,11 @@
 "use client";
 
-import { LOGIN_CALLBACK_URL } from "@/middleware";
 import { FormEvent } from "react";
 import { toast } from "sonner";
 import { resetAccountPassword } from "../../actions/auth/auth";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default async function ForgotPasswordForm() {
-  const router = useRouter();
-
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -23,8 +19,6 @@ export default async function ForgotPasswordForm() {
     }
 
     toast.success(formResponse.message);
-
-    router.push(LOGIN_CALLBACK_URL);
   }
 
   return (
