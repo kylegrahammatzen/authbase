@@ -31,7 +31,11 @@ export default function VerifyForm(props: VerifyFormProps) {
 
     let nextIndex =
       currentIndex +
-      (isDigit ? 1 : event.key === "Backspace" || e.key === "Delete" ? -1 : 0);
+      (isDigit
+        ? 1
+        : event.key === "Backspace" || event.key === "Delete"
+        ? -1
+        : 0);
 
     // Check if fieldsRef.current is not null before accessing children
     if (fieldsRef.current) {
