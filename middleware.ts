@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { initAuthbase } from "./lib/auth/authbase";
 
-export const LOGIN_CALLBACK_URL = "/protected";
+export const LOGIN_CALLBACK_URL = "/dashboard";
 export const LOGOUT_CALLBACK_URL = "/sign-in";
 
 // Configuration for Authbase
 const authbase = initAuthbase({
   // Add publicRoutes as needed
   // publicRoutes: ["/sign-in", "/sign-up"],
-  privateRoutes: ["/protected"],
+  privateRoutes: ["/dashboard"],
 });
 
 export async function middleware(request: NextRequest) {
